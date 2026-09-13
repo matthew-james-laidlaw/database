@@ -19,7 +19,7 @@ class TestDatabase(unittest.TestCase):
     def test_cannot_locate_dbfile_returns_error(self):
         self.assertFalse(os.path.exists('./database.db'))
         self.assertTrue(os.path.exists(self.dbexe))
-        result = subprocess.run([str(self.dbexe)])
+        result = subprocess.run([str(self.dbexe)], input='exit', text=True)
         self.assertEqual(result.returncode, 1)
 
     def test_cannot_open_dbfile_returns_error(self):
@@ -29,16 +29,16 @@ class TestDatabase(unittest.TestCase):
         self.assertTrue(os.path.exists('./database.db'))
         oschmod.set_mode('./database.db', 0o000)
         self.assertTrue(os.path.exists(self.dbexe))
-        result = subprocess.run([str(self.dbexe)])
+        result = subprocess.run([str(self.dbexe)], input='exit', text=True)
         self.assertEqual(result.returncode, 1)
 
-    def test_database_loads_successfully(self):
+    def test_database_loads_and_exits_successfully(self):
         self.assertFalse(os.path.exists('./database.db'))
         with open('./database.db', 'w') as file:
             file.write('key value\n')
         self.assertTrue(os.path.exists('./database.db'))
         self.assertTrue(os.path.exists(self.dbexe))
-        result = subprocess.run([str(self.dbexe)])
+        result = subprocess.run([str(self.dbexe)], input='exit', text=True)
         self.assertEqual(result.returncode, 0)
 
     def test_database_with_duplicate_keys_fails_to_load(self):
@@ -48,7 +48,7 @@ class TestDatabase(unittest.TestCase):
             file.write('key value2\n')
         self.assertTrue(os.path.exists('./database.db'))
         self.assertTrue(os.path.exists(self.dbexe))
-        result = subprocess.run([str(self.dbexe)])
+        result = subprocess.run([str(self.dbexe)], input='exit', text=True)
         self.assertEqual(result.returncode, 1)
 
     def test_create_runs_successfuly(self):
