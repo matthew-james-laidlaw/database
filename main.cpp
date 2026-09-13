@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
+#include <sstream>
 
 namespace fs = std::filesystem;
 
@@ -69,9 +70,58 @@ auto App() -> void
     }
 
     auto db = Database(dbfile);
+
+    bool done = false;
+    while (!done)
+    {
+        std::cout << "> ";
+
+        std::string line;
+        std::getline(std::cin, line, '\n');
+
+        std::istringstream stream(line);
+
+        std::string command;
+        stream >> command;
+
+        if (command == "create")
+        {
+            std::string key;
+            std::string value;
+            stream >> key >> value;
+            std::cout << std::format("command: '{}', key: '{}', value: '{}'\n", command, key, value);
+        }
+        else if (command == "read")
+        {
+            std::string key;
+            stream >> key;
+            std::cout << std::format("command: '{}', key: '{}'\n", command, key);
+        }
+        else if (command == "update")
+        {
+            std::string key;
+            std::string new_value;
+            stream >> key >> new_value;
+            std::cout << std::format("command: '{}', key: '{}', value: '{}'\n", command, key, new_value);
+        }
+        else if (command == "delete")
+        {
+            std::string key;
+            stream >> key;
+            std::cout << std::format("command: '{}', key: '{}'\n", command, key);
+        }
+        else if (command == "exit")
+        {
+            done = true;
+        }
+        else
+        {
+            std::cout << std::format("unrecognized command: '{}'\n", command);
+        }
+    }
 }
 
-auto main() -> int
+auto main(int argc, char** argv) -> int
 {
     try
     {
