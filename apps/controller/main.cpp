@@ -7,6 +7,8 @@
 #include <format>
 #include <print>
 
+Log::Logger g_logger(L"controller");
+
 class Process
 {
 private:
@@ -22,25 +24,15 @@ public:
 	{
 		m_startup_info.cb = sizeof(m_startup_info);
 
-		auto ok = CreateProcessW(
-			nullptr,
-			command,
-			nullptr,
-			nullptr,
-			FALSE,
-			0,
-			nullptr,
-			nullptr,
-			&m_startup_info,
-			&m_process_info
-		);
-
+		auto ok = CreateProcessW(nullptr, command, nullptr, nullptr, FALSE, 0,
+								nullptr, nullptr, &m_startup_info, &m_process_info);
 		if (!ok)
 		{
-			throw std::runtime_error(std::format("CreateProcessW failed with error: {}", GetLastError()));
+			g_logger.Error(L"CreateProcessW failed with error: {}", GetLastError());
+			throw std::runtime_error("CreateProcessW failed");
 		}
 
-		Log::Info(L"executed command '{}' with process id '{}'", command, m_process_info.dwProcessId);
+		g_logger.Info(L"executed command '{}' with process id '{}'", command, m_process_info.dwProcessId);
 	}
 
 	~Process()
@@ -63,7 +55,7 @@ public:
 		auto exit_code = DWORD{};
 		GetExitCodeProcess(m_process_info.hProcess, &exit_code);
 
-		Log::Info(L"process id '{}' exited with code '{}'", m_process_info.dwProcessId, exit_code);
+		g_logger.Info(L"process id '{}' exited with code '{}'", m_process_info.dwProcessId, exit_code);
 	}
 
 };

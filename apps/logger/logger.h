@@ -55,21 +55,35 @@ public:
 
 };
 
-template <typename... Ts>
-auto Info(std::wformat_string<Ts...> msg, Ts&&... args) -> void
-{
-    auto lock = Lock();
-    auto pid = GetCurrentProcessId();
-    std::wcout << std::format(L"[info][{}] ", pid) << std::format(msg, std::forward<Ts>(args)...) << L'\n';
-}
 
-template <typename... Ts>
-auto Error(std::wformat_string<Ts...> msg, Ts&&... args) -> void
+
+struct Logger
 {
-    auto lock = Lock();
-    auto pid = GetCurrentProcessId();
-    std::wcout << std::format(L"[error][{}] ", pid) << std::format(msg, std::forward<Ts>(args)...) << L'\n';
-}
+private:
+
+    std::wstring m_name;
+
+public:
+
+    Logger(std::wstring const& name)
+        : m_name(name)
+    {}
+
+    template <typename... Ts>
+    auto Info(std::wformat_string<Ts...> msg, Ts&&... args) -> void
+    {
+        auto lock = Lock();
+        std::wcout << std::format(L"[{}][info] ", m_name) << std::format(msg, std::forward<Ts>(args)...) << L'\n';
+    }
+
+    template <typename... Ts>
+    auto Error(std::wformat_string<Ts...> msg, Ts&&... args) -> void
+    {
+        auto lock = Lock();
+        std::wcout << std::format(L"[{}][error] ", m_name) << std::format(msg, std::forward<Ts>(args)...) << L'\n';
+    }
+
+};
 
 } // namespace Log
 
