@@ -7,7 +7,7 @@
 #include <format>
 #include <print>
 
-Log::Logger g_logger(L"controller");
+Log::Logger g_logger(L"controller", Log::Color::Green);
 
 class Process
 {

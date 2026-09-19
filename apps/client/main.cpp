@@ -9,7 +9,7 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-Log::Logger g_logger(L"client");
+Log::Logger g_logger(L"client", Log::Color::Red);
 
 class Client
 {

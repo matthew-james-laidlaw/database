@@ -14,6 +14,7 @@
 
 #include <format>
 #include <iostream>
+#include <unordered_map>
 
 namespace Log
 {
@@ -55,25 +56,39 @@ public:
 
 };
 
+enum class Color
+{
+    Red,
+    Green,
+    Blue,
+    Reset
+};
 
+std::unordered_map<Color, char const*> Colors = {
+    { Color::Reset, "\033[0m" },
+    { Color::Red, "\033[31m" },
+    { Color::Green, "\033[32m" },
+    { Color::Blue, "\033[34m" },
+};
 
 struct Logger
 {
 private:
 
     std::wstring m_name;
+    Color m_color;
 
 public:
 
-    Logger(std::wstring const& name)
-        : m_name(name)
+    Logger(std::wstring const& name, Color color)
+        : m_name(name), m_color(color)
     {}
 
     template <typename... Ts>
     auto Info(std::wformat_string<Ts...> msg, Ts&&... args) -> void
     {
         auto lock = Lock();
-        std::wcout << std::format(L"[{}][info] ", m_name) << std::format(msg, std::forward<Ts>(args)...) << L'\n';
+        std::wcout << Colors[m_color] << std::format(L"[{}][info] ", m_name) << std::format(msg, std::forward<Ts>(args)...) << Colors[Color::Reset] << L'\n';
     }
 
     template <typename... Ts>
@@ -86,4 +101,3 @@ public:
 };
 
 } // namespace Log
-

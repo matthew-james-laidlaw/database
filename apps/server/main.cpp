@@ -7,7 +7,7 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-Log::Logger g_logger(L"server");
+Log::Logger g_logger(L"server", Log::Color::Blue);
 
 struct Socket
 {
