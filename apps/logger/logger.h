@@ -95,7 +95,7 @@ public:
     auto Error(std::wformat_string<Ts...> msg, Ts&&... args) -> void
     {
         auto lock = Lock();
-        std::wcout << std::format(L"[{}][error] ", m_name) << std::format(msg, std::forward<Ts>(args)...) << L'\n';
+        std::wcout << Colors[m_color] << std::format(L"[{}][error] ", m_name) << std::format(msg, std::forward<Ts>(args)...) << Colors[Color::Reset] << L'\n';
     }
 
 };

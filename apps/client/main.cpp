@@ -1,4 +1,5 @@
 #include <logger.h>
+#include <protocol.h>
 
 #include <WinSock2.h>
 #include <WS2tcpip.h>
@@ -99,14 +100,52 @@ public:
         g_logger.Info(L"received message: {}", received);
     }
 
+    auto SendHeader(Header const& header) -> void
+    {
+        auto bytes_to_send = static_cast<int>(sizeof(Header));
+        auto total_bytes_sent = 0;
+
+        char const* message = reinterpret_cast<char const*>(&header);
+
+        while (total_bytes_sent < bytes_to_send)
+        {
+            auto bytes_sent = send(m_socket, message + total_bytes_sent, bytes_to_send - total_bytes_sent, 0);
+            if (bytes_sent == SOCKET_ERROR)
+            {
+                g_logger.Error(L"send failed with error code '{}'", WSAGetLastError());
+                throw std::runtime_error("send failed");
+            }
+            total_bytes_sent += bytes_sent;
+        }
+    }
+
+    auto SendPayload(Header const& header, char const* payload) -> void
+    {
+
+    }
+
 };
 
-int main()
+auto Main() -> void
 {
     auto client = Client();
 
-    client.Send("Hello from client!");
-    client.Receive();
+    std::string message = "Hello, World!";
+    auto header = Header{ .size = std::strlen(message.c_str()) };
 
-    return 0;
+    client.SendHeader(header);
+    client.SendPayload(header, message.c_str());
+}
+
+auto main() -> int
+{
+    try
+    {
+        Main();
+        return 0;
+    }
+    catch(...)
+    {
+        return 1;
+    }
 }

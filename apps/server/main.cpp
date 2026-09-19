@@ -2,6 +2,7 @@
 #include <WS2tcpip.h>
 
 #include <logger.h>
+#include <protocol.h>
 
 #include <iostream>
 
@@ -145,15 +146,60 @@ public:
         g_logger.Info(L"received message: {}", received);
     }
 
+    auto ReceiveHeader(Socket& client) -> Header
+    {
+        const size_t buffer_size = sizeof(Header);
+        char buffer[buffer_size];
+
+        auto bytes_received = recv(client.Get(), buffer, buffer_size, 0);
+        if (bytes_received == SOCKET_ERROR)
+        {
+            g_logger.Error(L"recv failed with error code '{}'", WSAGetLastError());
+            throw std::runtime_error("recv failed");
+        }
+        else if (bytes_received != buffer_size)
+        {
+            g_logger.Error(L"failed to receive instruction header");
+            throw std::runtime_error("ReceiveHeader failed");
+        }
+
+        Header header = *reinterpret_cast<Header*>(&buffer[0]);
+        return header;
+
+        g_logger.Info(L"received header: {}", ToString(header));
+    }
+
+    auto ReceivePayload(Header const& header) -> Payload
+    {
+        return {};
+    }
+
 };
 
-int main()
+auto Execute(Payload const& payload) -> void
+{
+
+}
+
+auto Main() -> void
 {
     auto server = Server();
-
     auto client = server.Accept();
-    server.Receive(client);
-    server.Send(client, "Hello from server!");
 
-    return 0;
+    auto header = server.ReceiveHeader(client);
+    auto payload = server.ReceivePayload(header);
+    Execute(payload);
+}
+
+auto main() -> int
+{
+    try
+    {
+        Main();
+        return 0;
+    }
+    catch(...)
+    {
+        return 1;
+    }
 }
