@@ -1,3 +1,5 @@
+/*
+
 #include <logger.h>
 #include <protocol.h>
 
@@ -12,7 +14,47 @@
 
 Log::Logger g_logger(L"client", Log::Color::Red);
 
-class Client
+auto Main() -> void
+{
+    auto client = Client();
+
+    std::string message = "Hello, World!";
+    auto header = Header{ .size = std::strlen(message.c_str()) };
+
+    client.SendHeader(header);
+    client.SendPayload(header, message.c_str());
+}
+
+auto main() -> int
+{
+    try
+    {
+        Main();
+        return 0;
+    }
+    catch(...)
+    {
+        return 1;
+    }
+}
+
+*/
+
+#include <logger.h>
+#include <thread>
+#include <vector>
+
+class IClient
+{
+public:
+
+    virtual auto Send(char const* msg, size_t size) -> void = 0;
+    virtual auto Receive(size_t size) -> std::string = 0;
+
+};
+
+#ifdef _WIN32
+class WindowsClient : public IClient
 {
 private:
 
@@ -125,27 +167,50 @@ public:
     }
 
 };
+#endif
 
-auto Main() -> void
+class UnixClient : public IClient
 {
-    auto client = Client();
+private:
 
-    std::string message = "Hello, World!";
-    auto header = Header{ .size = std::strlen(message.c_str()) };
 
-    client.SendHeader(header);
-    client.SendPayload(header, message.c_str());
-}
+
+public:
+
+    auto Send(char const* msg, size_t size) -> void override
+    {
+
+    }
+
+    auto Receive(size_t size) -> std::string override
+    {
+
+    }
+
+};
+
+#ifdef _WIN32
+using Client = WindowsClient;
+#else
+using Client = UnixClient;
+#endif
 
 auto main() -> int
 {
-    try
+    auto logger = Log::Logger(L"client", Log::Color::Green);
+    std::vector<std::thread> threads;
+    for (auto const* msg : { L"ABC", L"DEF", L"GHI", L"JKL", L"MNO", L"PQR", L"STU", L"VWX", L"YZ" })
     {
-        Main();
-        return 0;
+        threads.emplace_back([&logger, msg]()
+        {
+            logger.Info(L"{}", msg);
+        });
     }
-    catch(...)
+
+    for (auto& thread : threads)
     {
-        return 1;
+        thread.join();
     }
+
+    return 0;
 }

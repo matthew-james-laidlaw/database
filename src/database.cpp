@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 #include <fstream>
+#include <sstream>
 
 Database::Database(std::filesystem::path const& filepath)
 	: m_filepath(filepath)
