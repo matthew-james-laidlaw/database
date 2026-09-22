@@ -30,7 +30,7 @@ auto Lex(std::string_view& source) -> std::vector<Token>
 		else if (lexeme == delete_cmd)
 		{
 			source = source.substr(delete_cmd.size());
-			tokens.emplace_back("DELETE", Token::Type::DELETE);
+			tokens.emplace_back("DELETE", Token::Type::TOK_DELETE);
 		}
 		else
 		{

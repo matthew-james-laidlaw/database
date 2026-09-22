@@ -8,7 +8,7 @@ public:
 
 	enum class Type
 	{
-		INSERT, SELECT, UPDATE, DELETE,
+		INSERT, SELECT, UPDATE, TOK_DELETE,
 		LITERAL
 	};
 

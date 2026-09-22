@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <fstream>
 
+
+
 Database::Database(std::filesystem::path const& filepath)
 	: m_filepath(filepath)
 {
@@ -20,7 +22,8 @@ auto Database::LoadDatabase() -> void
 	auto infile = std::ifstream(m_filepath);
 	if (!infile)
 	{
-		LogFatal("failed to open file: '{}'", m_filepath.string());
+		g_logger.Error("failed to open file: '{}'", m_filepath.string());
+		throw std::runtime_error("");
 	}
 
 	auto line = std::string();
@@ -32,7 +35,8 @@ auto Database::LoadDatabase() -> void
 		stream >> key >> value;
 		if (key.empty() || value.empty())
 		{
-			LogFatal("failed to parse database file due to invalid line");
+			g_logger.Error("failed to parse database file due to invalid line");
+			throw std::runtime_error("");
 		}
 		m_data.insert({ key, value });
 	}
@@ -43,7 +47,8 @@ auto Database::StoreDatabase() -> void
 	auto outfile = std::ofstream(m_filepath);
 	if (!outfile)
 	{
-		LogFatal("failed to open file: '{}'", m_filepath.string());
+		g_logger.Error("failed to open file: '{}'", m_filepath.string());
+		throw std::runtime_error("");
 	}
 
 	for (auto const& [key, value] : m_data)

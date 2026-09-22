@@ -1,5 +1,6 @@
+#include <database.h>
 #include <logger.h>
-#include <parser.h>
+#include <parser2.h>
 #include <token.h>
 #include <statement.h>
 
@@ -26,13 +27,13 @@ auto ParseStmt(std::span<Token>& tokens) -> std::shared_ptr<Stmt>
 	{
 		return ParseUpdateStmt(tokens);
 	}
-	else if (type == Token::Type::DELETE)
+	else if (type == Token::Type::TOK_DELETE)
 	{
 		return ParseDeleteStmt(tokens);
 	}
 	else
 	{
-		LogFatal("unexpected token '{}':, expected a command", tokens[0].GetLexeme());
+		g_logger.Error("unexpected token '{}':, expected a command", tokens[0].GetLexeme());
 		return nullptr;
 	}
 }

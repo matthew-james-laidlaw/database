@@ -1,194 +1,113 @@
-#include <WinSock2.h>
-#include <WS2tcpip.h>
+#include <database.h>
 
-#include <logger.h>
-#include <protocol.h>
+#include <server.h>
 
+#include <string>
 #include <iostream>
+#include <vector>
+#include <filesystem>
 
-#pragma comment(lib, "Ws2_32.lib")
+static const char OP_INSERT = 0x00;
+static const char OP_SELECT = 0x01;
+static const char OP_UPDATE = 0x02;
+static const char OP_DELETE = 0x03;
 
-Log::Logger g_logger(L"server", Log::Color::Blue);
+template <typename T>
+auto ToBytes(T const& value) -> std::vector<char>
+{
+    auto bytes = std::vector<char>(sizeof(T));
+    std::memcpy(bytes.data(), reinterpret_cast<char const*>(&value), sizeof(T));
+    return bytes;
+}
 
-struct Socket
+template <typename T>
+auto Deserialize(std::vector<char> const& bytes) -> T
+{
+    T value;
+    std::memcpy(&value, bytes.data(), bytes.size());
+    return value;
+}
+
+class DatabaseServer
 {
 private:
 
-    SOCKET m_handle;
+    Database m_database;
+    Server m_server;
 
 public:
 
-    Socket(SOCKET handle)
-        : m_handle(handle)
+    DatabaseServer()
+        : m_database(std::filesystem::current_path())
     {}
 
-    ~Socket()
+    auto Receive() -> void
     {
-        closesocket(m_handle);
+        auto op = m_server.Receive(1);
+        switch (op[0])
+        {
+        case OP_INSERT: Insert(); break;
+        case OP_SELECT: Select(); break;
+        case OP_UPDATE: Update(); break;
+        case OP_DELETE: Delete(); break;
+        default: throw std::runtime_error("");
+        }
     }
 
-    auto Get() const -> SOCKET
-    {
-        return m_handle;
-    }
-
-    auto Get() -> SOCKET
-    {
-        return m_handle;
-    }
-
-};
-
-class Server
-{
 private:
 
-    SOCKET m_server;
-
-public:
-
-    Server()
+    auto Insert() -> void
     {
-        auto wsa_data = WSADATA{};
+        auto key_len_bytes = m_server.Receive(sizeof(uint32_t));
+        auto key_len = Deserialize<uint32_t>(key_len_bytes);
+        auto key_bytes = m_server.Receive(key_len);
+        
+        auto value_len_bytes = m_server.Receive(sizeof(uint32_t));
+        auto value_len = Deserialize<uint32_t>(value_len_bytes);
+        auto value_bytes = m_server.Receive(value_len);
 
-        auto result = WSAStartup(MAKEWORD(2, 2), &wsa_data);
-        if (result != 0)
-        {
-            g_logger.Error(L"WSAStartup failed with error code '{}'", result);
-            throw std::runtime_error("WSAStartup failed");
-        }
-
-        m_server = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        if (m_server == INVALID_SOCKET)
-        {
-            g_logger.Error(L"socket failed with error code '{}'", WSAGetLastError());
-            throw std::runtime_error("socket failed");
-        }
-
-        PCSTR addr = "127.0.0.1";
-        u_short port = 8080;
-
-        sockaddr_in server_address{};
-        server_address.sin_family = AF_INET;
-        server_address.sin_port = htons(port);
-
-        // convert IP address from text to binary form
-        inet_pton(AF_INET, addr, &server_address.sin_addr);
-
-        result = bind(m_server, reinterpret_cast<sockaddr*>(&server_address), sizeof(server_address));
-        if (result == SOCKET_ERROR)
-        {
-            g_logger.Error(L"bind failed with error code '{}'", WSAGetLastError());
-            throw std::runtime_error("bind failed");
-        }
-
-        result = listen(m_server, SOMAXCONN);
-        if (result == SOCKET_ERROR)
-        {
-            g_logger.Error(L"listen failed with error code '{}'", WSAGetLastError());
-            throw std::runtime_error("listen failed");
-        }
-
-        std::wstring wide_addr(addr, addr + std::strlen(addr));
-        g_logger.Info(L"listening on '{}'", wide_addr);
+        std::string key(key_bytes.begin(), key_bytes.end());
+        std::string value(key_bytes.begin(), key_bytes.end());
     }
 
-    ~Server()
+    auto Select() -> void
     {
-        closesocket(m_server);
-        WSACleanup();
+        auto key_len_bytes = m_server.Receive(sizeof(uint32_t));
+        auto key_len = Deserialize<uint32_t>(key_len_bytes);
+        auto key_bytes = m_server.Receive(key_len);
+
+        std::string key(key_bytes.begin(), key_bytes.end());
     }
 
-    auto Accept() -> Socket
+    auto Update() -> void
     {
-        auto client = accept(m_server, nullptr, nullptr);
-        if (client == INVALID_SOCKET)
-        {
-            g_logger.Error(L"accept failed with error code '{}'", WSAGetLastError());
-            throw std::runtime_error("accept failed");
-        }
-        g_logger.Info(L"accepted client connection");
-        return Socket(client);
+        auto key_len_bytes = m_server.Receive(sizeof(uint32_t));
+        auto key_len = Deserialize<uint32_t>(key_len_bytes);
+        auto key_bytes = m_server.Receive(key_len);
+        
+        auto value_len_bytes = m_server.Receive(sizeof(uint32_t));
+        auto value_len = Deserialize<uint32_t>(value_len_bytes);
+        auto value_bytes = m_server.Receive(value_len);
+
+        std::string key(key_bytes.begin(), key_bytes.end());
+        std::string value(key_bytes.begin(), key_bytes.end());
     }
 
-    auto Send(Socket& client, char const* message) -> void
+    auto Delete() -> void
     {
-        auto bytes_to_send = static_cast<int>(std::strlen(message));
-        auto total_bytes_sent = 0;
+        auto key_len_bytes = m_server.Receive(sizeof(uint32_t));
+        auto key_len = Deserialize<uint32_t>(key_len_bytes);
+        auto key_bytes = m_server.Receive(key_len);
 
-        while (total_bytes_sent < bytes_to_send)
-        {
-            auto bytes_sent = send(client.Get(), message + total_bytes_sent, bytes_to_send - total_bytes_sent, 0);
-            if (bytes_sent == SOCKET_ERROR)
-            {
-                g_logger.Error(L"send failed with error code '{}'", WSAGetLastError());
-                throw std::runtime_error("send failed");
-            }
-            total_bytes_sent += bytes_sent;
-        }
-
-        std::wstring sent(message, message + total_bytes_sent);
-        g_logger.Info(L"sent message: {}", sent);
-    }
-
-    auto Receive(Socket& client) -> void
-    {
-        char buffer[4096];
-
-        int bytes_received = recv(client.Get(), buffer, sizeof(buffer), 0);
-        if (bytes_received == SOCKET_ERROR)
-        {
-            g_logger.Error(L"recv failed with error code '{}'", WSAGetLastError());
-            throw std::runtime_error("recv failed");
-        }
-
-        std::wstring received(buffer, buffer + bytes_received);
-        g_logger.Info(L"received message: {}", received);
-    }
-
-    auto ReceiveHeader(Socket& client) -> Header
-    {
-        const size_t buffer_size = sizeof(Header);
-        char buffer[buffer_size];
-
-        auto bytes_received = recv(client.Get(), buffer, buffer_size, 0);
-        if (bytes_received == SOCKET_ERROR)
-        {
-            g_logger.Error(L"recv failed with error code '{}'", WSAGetLastError());
-            throw std::runtime_error("recv failed");
-        }
-        else if (bytes_received != buffer_size)
-        {
-            g_logger.Error(L"failed to receive instruction header");
-            throw std::runtime_error("ReceiveHeader failed");
-        }
-
-        Header header = *reinterpret_cast<Header*>(&buffer[0]);
-        return header;
-
-        g_logger.Info(L"received header: {}", ToString(header));
-    }
-
-    auto ReceivePayload(Header const& header) -> Payload
-    {
-        return {};
+        std::string key(key_bytes.begin(), key_bytes.end());
     }
 
 };
-
-auto Execute(Payload const& payload) -> void
-{
-
-}
 
 auto Main() -> void
 {
-    auto server = Server();
-    auto client = server.Accept();
-
-    auto header = server.ReceiveHeader(client);
-    auto payload = server.ReceivePayload(header);
-    Execute(payload);
+    auto server = DatabaseServer();
+    server.Receive();
 }
 
 auto main() -> int
@@ -198,7 +117,7 @@ auto main() -> int
         Main();
         return 0;
     }
-    catch(...)
+    catch(std::exception const& e)
     {
         return 1;
     }

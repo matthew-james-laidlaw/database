@@ -18,7 +18,7 @@ auto IsKeyword(Token const& token) -> bool
 {
 	auto type = token.GetType();
 	if (type == Token::Type::INSERT || type == Token::Type::SELECT ||
-		type == Token::Type::UPDATE || type == Token::Type::DELETE)
+		type == Token::Type::UPDATE || type == Token::Type::TOK_DELETE)
 	{
 		return true;
 	}

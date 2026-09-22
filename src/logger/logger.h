@@ -61,14 +61,16 @@ enum class Color
     Red,
     Green,
     Blue,
+    Yellow,
     Reset
 };
 
-std::unordered_map<Color, char const*> Colors = {
+inline std::unordered_map<Color, char const*> Colors = {
     { Color::Reset, "\033[0m" },
     { Color::Red, "\033[31m" },
     { Color::Green, "\033[32m" },
     { Color::Blue, "\033[34m" },
+    { Color::Yellow, "\033[33m" },
 };
 
 struct Logger
@@ -92,10 +94,26 @@ public:
     }
 
     template <typename... Ts>
+    auto Info(std::format_string<Ts...> msg, Ts&&... args) -> void
+    {
+        auto lock = Lock();
+        auto name = std::string(m_name.begin(), m_name.end());
+        std::cout << Colors[m_color] << std::format("[{}][info] ", name) << std::format(msg, std::forward<Ts>(args)...) << Colors[Color::Reset] << '\n';
+    }
+
+    template <typename... Ts>
     auto Error(std::wformat_string<Ts...> msg, Ts&&... args) -> void
     {
         auto lock = Lock();
         std::wcout << Colors[m_color] << std::format(L"[{}][error] ", m_name) << std::format(msg, std::forward<Ts>(args)...) << Colors[Color::Reset] << L'\n';
+    }
+
+    template <typename... Ts>
+    auto Error(std::format_string<Ts...> msg, Ts&&... args) -> void
+    {
+        auto lock = Lock();
+        auto name = std::string(m_name.begin(), m_name.end());
+        std::cout << Colors[m_color] << std::format("[{}][error] ", name) << std::format(msg, std::forward<Ts>(args)...) << Colors[Color::Reset] << '\n';
     }
 
 };

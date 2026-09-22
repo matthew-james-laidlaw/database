@@ -1,11 +1,14 @@
 #pragma once
 
 #include <token.h>
+#include <logger.h>
 
 #include <filesystem>
 #include <optional>
 #include <string>
 #include <unordered_map>
+
+inline Log::Logger g_logger(L"database", Log::Color::Yellow);
 
 class Database
 {

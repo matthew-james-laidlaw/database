@@ -37,7 +37,7 @@ auto MakeDatabaseFile(std::filesystem::path path, std::unordered_map<std::string
 	auto outfile = std::ofstream(path);
 	if (!outfile)
 	{
-		LogFatal("failed to open file: '{}'", path.string());
+		throw std::runtime_error(std::format("failed to open file: '{}'", path.string()));
 	}
 
 	for (auto const& [ key, value ] : pairs)
